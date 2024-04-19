@@ -1,0 +1,42 @@
+import tweepy
+import MySQLdb
+
+# Twitter API anahtarları ve erişim belirteçleri
+consumer_key = "YOUR_CONSUMER_KEY"
+consumer_secret = "YOUR_CONSUMER_SECRET"
+access_token = "YOUR_ACCESS_TOKEN"
+access_token_secret = "YOUR_ACCESS_TOKEN_SECRET"
+
+# MySQL veritabanı bağlantı bilgileri
+db_host = "localhost"
+db_user = "YOUR_USERNAME"
+db_password = "YOUR_PASSWORD"
+db_name = "YOUR_DATABASE_NAME"
+
+# Twitter API'ye bağlanma
+auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+auth.set_access_token(access_token, access_token_secret)
+api = tweepy.API(auth)
+
+# Veritabanı bağlantısı kurma
+db = MySQLdb.connect(host=db_host, user=db_user, password=db_password, db=db_name)
+cursor = db.cursor()
+
+# Aranacak anahtar kelimeler
+keywords = ["Ayşe Ünlüce", "Eskişehir Büyükşehir Belediyesi"]
+
+# Tweetleri arama
+for tweet in tweepy.Cursor(api.search, q=keywords).items(100):
+    # Tweet metnini ve tweet ID'sini alma
+    tweet_text = tweet.text
+    tweet_id = tweet.id_str
+
+    # Tweet metninde anahtar kelimelerin olup olmadığını kontrol etme
+    for keyword in keywords:
+        if keyword.lower() in tweet_text.lower():
+            # Tweet verilerini veritabanına kaydetme
+            cursor.execute("INSERT INTO tweets (tweet_id, tweet_text) VALUES (%s, %s)", (tweet_id, tweet_text))
+            db.commit()
+
+# Veritabanı bağlantısını kapatma
+db.close()
